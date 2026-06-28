@@ -221,7 +221,7 @@ Documentación funcional y técnica del proyecto.
 2. Levantar todo el entorno (SQL Server + ETL):
 
 ```bash
-docker compose up 
+docker compose up --build -d 
 ```
 Esto iniciará automáticamente:
 - SQL Server

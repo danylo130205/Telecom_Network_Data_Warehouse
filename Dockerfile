@@ -1,5 +1,5 @@
 # Definir la versión de python a usar
-FROM python:3.11-slim
+FROM python:3.11.9-slim-bookworm
 
 # Evita buffering de logs
 ENV PYTHONUNBUFFERED=1
