@@ -1,0 +1,39 @@
+# Definir version de docker
+version: "3.9"
+#Definir los servicios
+services:
+  #SQLserver
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest #Imagen oficial de SQLserver
+    container_name: telecom_sqlserver #Nombre del contenedor
+    environment:
+      ACCEPT_EULA: "Y" #Acepta las licencias
+      SA_PASSWORD: "Telecomadmin123!" # Contraseña de la bd. AS Telecomadmin123!
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_telecom:/var/opt/mssql
+    networks:
+      - etl_network # Red de trabajo entre los contenedores
+  #ETL
+  etl:
+    build: . #Le indica construir el contener usando el dockerfile que existe en al carpeta actual
+    container_name: telecom_etl # Nombre del contenedor
+    depends_on:
+      - sqlserver #Indica que no se inicie el contenedor ETL si el contenedor sqlserver (el conteneor de arriba) no a arranacado
+
+    volumes: # Sincroniza carpetas del proyecto con el contenedor. NO crea copias: refleja cambios en tiempo real entre host y contenedor
+      # Permite que el ETL lea:
+      - ./data:/app/data # - archivos Parquet (data)
+      - ./python:/app/python # - código Python (python)
+      - ./sql:/app/sql # - scripts SQL (sql)
+    working_dir: /app/python # Direccion establecida en el dockerfile (linea 8), es como hacer un    cd /app/python para ejecutar desde ahi la siguientes lineas
+    command: python main.py
+    networks:
+      - etl_network # Red de trabajo entre los contenedores
+
+volumes:
+  sqlserver_telecom:
+
+networks:
+  etl_network:

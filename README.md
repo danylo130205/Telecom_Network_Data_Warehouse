@@ -2,9 +2,13 @@
 
 Proyecto de ingeniería de datos orientado al procesamiento y análisis de eventos generados por una empresa de telecomunicaciones.
 
-El proyecto implementa una arquitectura Medallion (Bronze, Silver y Gold) para construir un Data Warehouse capaz de transformar datos crudos en información confiable para el análisis de infraestructura de red, comportamiento de clientes y generación de indicadores de negocio.
+El sistema implementa una arquitectura Medallion (Bronze, Silver y Gold) para transformar datos crudos en información confiable para el análisis de infraestructura de red, comportamiento de clientes y generación de indicadores de negocio.
 
-Python actúa como orquestador del pipeline ETL, mientras que SQL Server centraliza el almacenamiento, las transformaciones y el modelado analítico de los datos.
+Python actúa como orquestador del pipeline ETL, encargado de la ingesta y coordinación de procesos.
+
+SQL Server centraliza el almacenamiento, las transformaciones y el modelado analítico del Data Warehouse.
+
+Docker proporciona el entorno de ejecución del sistema (SQL Server + ETL), garantizando portabilidad y consistencia.
 
 ---
 
@@ -16,7 +20,7 @@ El proyecto implementa una arquitectura Medallion para transformar datos crudos 
 Parquet
     │
     ▼
-Python (Orquestador)
+Python (ETL Orquestador en Docker)
     │
     ▼
 Bronze
@@ -37,21 +41,24 @@ Analytics
 - **Bronze:** almacena los datos sin modificaciones.
 - **Silver:** aplica reglas de limpieza y transformación.
 - **Gold:** implementa el modelo analítico mediante tablas de hechos, dimensiones y vistas.
+- **Audit:** trazabilidad del pipeline.
 - **Analytics:** contiene las consultas utilizadas para responder preguntas de negocio y calcular indicadores.
 ---
 ## Tecnologías
 
-| Tecnología     | Propósito                                                                                                                                       |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Python**     | Orquestar el pipeline ETL, leer archivos Parquet, cargar los datos en Bronze y ejecutar los procesos de transformación definidos en SQL Server. |
-| **SQL Server** | Almacenar los datos, aplicar las transformaciones, implementar la arquitectura Medallion y construir el modelo analítico del Data Warehouse.    |
-| **Docker**     | Ejecutar SQL Server en un entorno aislado y garantizar la persistencia de los datos mediante volúmenes.                                         |
+| Tecnología | Propósito |
+|------------|----------|
+| Python | Orquestación del ETL y carga de datos |
+| SQL Server | Almacenamiento y modelado del Data Warehouse |
+| Docker | Entorno de ejecución del sistema |
 
 ---
 ## Estructura de carpetas
 ```` 
 Telecom_Network_Data_Warehouse/
 │
+├── requirements.txt
+├── Dockerfile
 ├── docker-compose.yml
 ├── README.md
 ├── .gitignore
@@ -211,30 +218,28 @@ Documentación funcional y técnica del proyecto.
 
 1. Clonar el repositorio.
 
-2. Levantar SQL Server mediante Docker.
+2. Levantar todo el entorno (SQL Server + ETL):
 
 ```bash
-docker compose up -d
+docker compose up 
 ```
-
+Esto iniciará automáticamente:
+- SQL Server
+- Pipeline ETL en Python
+    
 3. Colocar uno o más archivos `.parquet` dentro de:
 
 ```
 data/input/
 ```
 
-4. Ejecutar el pipeline:
-
-```bash
-python python/main.py
-```
-El pipeline procesará automáticamente todos los archivos `.parquet` encontrados en `data/input/.`
+El pipeline se ejecuta dentro de Docker y procesará automáticamente todos los archivos `.parquet`
 
 
 Para cada archivo, ejecutará las siguientes etapas:
 
 1. Inicializar la base de datos (si no existe).
-2. Crear los esquemas y tablas necesarios.
+2. Crear los esquemas y tablas necesarios (si no existe).
 3. Cargar los datos en la capa Bronze.
 4. Ejecutar las transformaciones hacia Silver.
 5. Construir el modelo analítico en Gold.
@@ -243,7 +248,7 @@ Para cada archivo, ejecutará las siguientes etapas:
 Cada archivo será procesado de manera independiente.
 
 - Si el procesamiento finaliza correctamente, el archivo será movido a `data/processed/`
-
 - Si ocurre algún error, el archivo será movido a `data/rejected/`.
 - Los archivos previamente procesados serán identificados mediante las tablas de auditoría para evitar cargas duplicadas.
 - Un error durante el procesamiento de un archivo no detendrá el procesamiento de los archivos restantes.
+
